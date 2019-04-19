@@ -11,8 +11,8 @@
         "figlet": "latest"
     },
     "devDependencies": {},
-    "scripts": {
-        "start": "cd src && node index"
+     "scripts": {
+        "start": "cd src && node index.js"
     },
     "repository": {
         "type": "git",
