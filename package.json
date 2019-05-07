@@ -12,7 +12,8 @@
     },
     "devDependencies": {},
      "scripts": {
-        "start": "cd src && node index.js"
+        "start": "cd run && node console-plus.js",
+         "2": "cd run && node console-plus.js"
     },
     "repository": {
         "type": "git",

@@ -1,6 +1,6 @@
 {
   "username":"admin",
   "password":"test",
-  "ip":"0.0.0.0",
-  "port":3000
+  "ip":"agarioserv2.herokuapp.com",
+  "port":8080
 }
