@@ -12,7 +12,8 @@
     },
     "devDependencies": {},
      "scripts": {
-        "start": "cd src && node index.js"
+        "start": "cd run && node console-plus.js",
+        "2": "cd .. node macro.js"
     },
     "repository": {
         "type": "git",
