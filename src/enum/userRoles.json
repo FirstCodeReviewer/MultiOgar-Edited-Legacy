@@ -1,9 +1,9 @@
 [
     {
-        "ip":"127.0.0.1",
-        "password":"",
+        "ip":"",
+        "password":"nopeeking",
         "role":"ADMIN",
-        "name":"Local Administrator"
+        "name":"A "
     },
     {
         "ip":"127.0.0.1",
