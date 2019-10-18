@@ -10,7 +10,7 @@ var fs = require('fs');
 
 const config = {
     role: "owner",
-    token: "NTc2Nzk1MDUzNDk4ODI2Nzc0.XNbsvg.YB3JnZQZaMHgGaTFFzC3sbX0ShU"
+    token: "NTc2Mzk2NjA3MjY0OTE1NDU3.XNbtTQ.yb1XYhPWO16LOVVfBIEJghPaegU"
 };
 
                 function getPos(client) {
@@ -246,9 +246,9 @@ class Bot {
     };
     onReady() {
         Logger.info(`Successfully logged in.`);
-        this.client.user.setActivity("Teams");
-        client2.channels.get('576795327013847041').send("**Server Started: Teams**" + "```" + port2 + "\n" + currentgamemode2 + "\n" + bot1 + "```" ) //listening on port port
-        client2.channels.get('575389368865390592').send("**Server Started: Teams**")
+        this.client.user.setActivity("Agario");
+        client2.channels.get('575389086265769989').send("**Server Started: Instant-Teams**" + "```" + port2 + "\n" + currentgamemode2 + "\n" + bot1 + "```" ) //listening on port port
+        client2.channels.get('575389368865390592').send("**Server Started: Instant-Teams**")
     };
 
     onError(error) {

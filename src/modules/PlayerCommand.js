@@ -51,6 +51,7 @@ var playerCommands = {
         if (this.playerTracker.userRole == UserRoleEnum.MODER) {
             this.writeLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
             this.writeLine("/skin %shark - change skin");
+            this.writeLine("/test - testing command");
             this.writeLine("/kill - self kill");
             this.writeLine("/killall - kills everyone.")
             this.writeLine("/help - this command list");
@@ -66,6 +67,7 @@ var playerCommands = {
             this.writeLine("/skin %shark - change skin");
             this.writeLine("/kill - self kill");
             this.writeLine("/killall - kills everyone.")
+            this.writeLine("/test - testing command");
             this.writeLine("/help - this command list");
             this.writeLine("/id - Gets your playerID");
             this.writeLine("/mass - gives mass to yourself or to other player");
@@ -79,6 +81,7 @@ var playerCommands = {
         } else {
             this.writeLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
             this.writeLine("/skin %shark - change skin");
+            this.writeLine("/test - testing command");
             this.writeLine("/kill - self kill");
             this.writeLine("/help - this command list");
             this.writeLine("/id - Gets your playerID");
@@ -345,5 +348,13 @@ var playerCommands = {
         }
         Logger.warn("RESTART REQUEST FROM " + this.playerTracker.socket.remoteAddress + " as " + this.playerTracker.userAuth);
         process.exit(3);
+    },
+    test: function (args) {
+        if (this.playerTracker.userRole != UserRoleEnum.ADMIN) {
+            this.writeLine("ERROR: access denied!");
+            return;
+        }
+        this.writeLine("TESTING");
+        Logger.warn("asdasd " + this.playerTracker.socket.remoteAddress + " as " + this.playerTracker.userAuth);
     }
 };
