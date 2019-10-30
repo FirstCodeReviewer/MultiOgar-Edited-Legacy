@@ -1,20 +1,26 @@
 [
     {
-        "ip":"127.0.0.1",
-        "password":"",
+        "ip":"",
+        "password":"nopeeking",
         "role":"ADMIN",
-        "name":"Local Administrator"
+        "name":"Administrator"
     },
     {
-        "ip":"127.0.0.1",
-        "password":"",
+        "ip":"",
+        "password":"AgarMod!",
         "role":"MODER",
-        "name":"Local Moderator"
+        "name":"Moderator"
     },
     {
-        "ip":"127.0.0.1",
-        "password":"",
-        "role":"USER",
-        "name":"Local User"
+        "ip":"",
+        "password":"AgarMember!",
+        "role":"Member",
+        "name":"MEMBER"
+    },
+    {
+        "ip":"",
+        "password":"Server",
+        "role":"SERVER",
+        "name":"SERVER"
     }
 ]

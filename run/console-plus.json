@@ -1,6 +1,6 @@
 {
   "username":"admin",
   "password":"test",
-  "ip":"0.0.0.0",
-  "port":3000
+  "ip":"teams1.herokuapp.com",
+  "port":8080
 }

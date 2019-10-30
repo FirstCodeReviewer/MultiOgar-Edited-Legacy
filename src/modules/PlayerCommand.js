@@ -6,6 +6,18 @@ function PlayerCommand(gameServer, playerTracker) {
     this.playerTracker = playerTracker;
 }
 
+var fillChar = function (data, char, fieldLength, rTL) {
+    var result = data.toString();
+    if (rTL === true) {
+        for (var i = result.length; i < fieldLength; i++)
+            result = char.concat(result);
+    } else {
+        for (var i = result.length; i < fieldLength; i++)
+            result = result.concat(char);
+    }
+    return result;
+};
+
 module.exports = PlayerCommand;
 
 PlayerCommand.prototype.writeLine = function (text) {
@@ -345,5 +357,13 @@ var playerCommands = {
         }
         Logger.warn("RESTART REQUEST FROM " + this.playerTracker.socket.remoteAddress + " as " + this.playerTracker.userAuth);
         process.exit(3);
+    },
+    test: function (args) {
+        if (this.playerTracker.userRole != UserRoleEnum.ADMIN) {
+            this.writeLine("ERROR: access denied!");
+            return;
+        }
+        this.writeLine("TESTING");
+        Logger.warn("asdasd " + this.playerTracker.socket.remoteAddress + " as " + this.playerTracker.userAuth);
     }
 };
