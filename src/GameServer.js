@@ -5,6 +5,21 @@ var http = require('http');
 var Entity = require('./entity');
 var Vec2 = require('./modules/Vec2');
 var Logger = require('./modules/Logger');
+var index = require('./index');
+const auth = require('./auth.json');
+
+var fs = require('fs');
+var fillChar = function (data, char, fieldLength, rTL) {
+    var result = data.toString();
+    if (rTL === true) {
+        for (var i = result.length; i < fieldLength; i++)
+            result = char.concat(result);
+    } else {
+        for (var i = result.length; i < fieldLength; i++)
+            result = result.concat(char);
+    }
+    return result;
+};
 
 // GameServer implementation
 function GameServer() {
@@ -183,13 +198,41 @@ GameServer.prototype.start = function () {
     this.clientBind = bind.split(' - ');
 
     // Start the server
-    this.httpServer = http.createServer();
+     this.httpServer = http.createServer((req, res) => {
+         if (req.url == "/loginfail") {
+            fs.readFile("./../loginfail.html", function (err, data2) {
+                if (err) {
+                    res.writehead(404);
+                    res.write(err);
+                    res.end();
+                } else {
+                    res.writeHead(200, {'Content-Type': 'text/html'});
+                    res.write(data2);
+                    res.end();
+                }
+            });
+         } else {
+            fs.readFile("./../console.html", function(error, data) {
+                if (error) {  
+                        res.writeHead(404);  
+                        res.write(error);  
+                        res.end();  
+                    } else {  
+                        res.writeHead(200, {  
+                            'Content-Type': 'text/html'  
+                        });  
+                        res.write(data);  
+                        res.end();  
+                    } 
+            });
+         }
+    })
     var wsOptions = {
         server: this.httpServer,
         perMessageDeflate: false,
         maxPayload: 4096
     };
-    const port2 = process.env.PORT || 8080
+    const port2 = 5000;
     Logger.info("WebSocket: " + this.config.serverWsModule);
     this.WebSocket = require(this.config.serverWsModule);
     this.wsServer = new this.WebSocket.Server(wsOptions);
@@ -208,14 +251,14 @@ GameServer.prototype.onHttpServerOpen = function () {
     setTimeout(this.timerLoopBind, 1);
 
     // Done
-    Logger.info("Listening on port " + process.env.PORT || 8080);
-    Logger.info("Current game mode is " + this.gameMode.name);
+    Logger.info("Listening on port 3000 ");
+    global.currentgamemode2 = "Current game mode is " + this.gameMode.name;
 
     // Player bots (Experimental)
     if (this.config.serverBots) {
         for (var i = 0; i < this.config.serverBots; i++)
             this.bots.addBot();
-        Logger.info("Added " + this.config.serverBots + " player bots");
+        global.bot1 = "Added " + this.config.serverBots + " player bots";
     }
 };
 
@@ -253,12 +296,12 @@ GameServer.prototype.onServerSocketError = function (error) {
     }
     process.exit(1); // Exits the program
 };
-
 GameServer.prototype.onClientSocketOpen = function (ws, req) {
     var req = req || ws.upgradeReq;
     var logip = ws._socket.remoteAddress + ":" + ws._socket.remotePort;
     ws.on('error', function (err) {
         Logger.writeError("[" + logip + "] " + err.stack);
+        ws.send("[ERROR] " + err);
     });
     if (this.config.serverMaxConnections && this.socketCount >= this.config.serverMaxConnections) {
         ws.close(1000, "No slots");
@@ -299,7 +342,147 @@ GameServer.prototype.onClientSocketOpen = function (ws, req) {
     var PlayerCommand = require('./modules/PlayerCommand');
     ws.playerCommand = new PlayerCommand(this, ws.playerTracker);
 
+    function pingClient() {
+        ws.ping();
+    }
+    function fakeData() {
+        ws.send('KEEPALIVE');
+    }
+
     var self = this;
+    function setinterval() {
+        setInterval(pingClient, 10000);
+    }
+    //var keepalive = setInterval(fakeData(), 10000);
+    const command = require('./modules/Command');
+    const index = require('./index');
+    var int = false;
+    ws.on('message', function (message) {
+        setinterval();
+        var isObject = function(a) {
+            return (!!a) && (a.constructor === Object)
+        };
+        if (message.length && message[0] == '/') {
+            message = message.slice(1, message.length);
+            Logger.write(">" + message);
+            var Str = message.toString();
+            var split2 = Str.split(' ');
+            var first = split2[0].toLowerCase();
+            var execute = command.list[first];
+            if (typeof execute != 'undefined') {
+                if ((split2 == "playerlist") || (split2 == "pl")) {
+                    playerlist(index.gameServer, split2);
+                    function playerlist(gameServer, split) {
+                        if (!gameServer.clients.length) message.channel.send("```No bots or players are currently connected to the server!```");
+                    var gameServer = index.gameServer;
+                    var sockets = gameServer.clients.slice(0);
+                    ws.send("\nCurrent players: " + gameServer.clients.length + "\n" +
+        'Do "playerlist m" or "pl m" to list minions\n' +
+        " ID     | IP              | P | CELLS | SCORE  |   POSITION   | " + fillChar('NICK', ' ', gameServer.config.playerMaxNickLength) + " \n" +
+        fillChar('', '─', ' ID     | IP              | CELLS | SCORE  |   POSITION   |   |  '.length + gameServer.config.playerMaxNickLength));
+        sockets.sort(function (a, b) {
+            return a.playerTracker.pID - b.playerTracker.pID;
+        });
+                    for (var i = 0; i < sockets.length; i++) {
+            var socket = sockets[i];
+            var client = socket.playerTracker;
+            var type = split2[1];
+
+            // ID with 3 digits length
+            var id = fillChar((client.pID), ' ', 6, true);
+
+            // Get ip (15 digits length)
+            var ip = client.isMi ? "[MINION]" : "[BOT]";
+            if (socket.isConnected && !client.isMi) {
+                ip = socket.remoteAddress;
+            } else if (client.isMi && type != "m") {
+                continue; // do not list minions
+            }
+            ip = fillChar(ip, ' ', 15);
+
+            // Get name and data
+            var protocol = gameServer.clients[i].packetHandler.protocol;
+            if (!protocol) protocol = "?";
+            var nick = ''
+            var cells = ''
+            var score = ''
+            var position = ''
+            var data = ''
+            if (socket.closeReason != null) {
+                // Disconnected
+                var reason = "[DISCONNECTED] ";
+                if (socket.closeReason.code)
+                    reason += "[" + socket.closeReason.code + "] ";
+                if (socket.closeReason.message)
+                    reason += socket.closeReason.message;
+                ws.send(" " + id + " | " + ip + " | " + protocol + " | " + reason);
+            } else if (!socket.packetHandler.protocol && socket.isConnected && !client.isMi) {
+                ws.send(" " + id + " | " + ip + " | " + protocol + " | " + "[CONNECTING]");
+            } else if (client.spectate) {
+                nick = "in free-roam";
+                if (!client.freeRoam) {
+                    var target = client.getSpecTarget();
+                    if (target) nick = getName(target._name);
+                }
+                data = fillChar("SPECTATING: " + nick, '-', ' | CELLS | SCORE  | POSITION    '.length + gameServer.config.playerMaxNickLength, true);
+                ws.send(" " + id + " | " + ip + " | " + protocol + " | " + data);
+            } else if (client.cells.length) {
+                    nick = fillChar(getName(client._name), ' ', gameServer.config.playerMaxNickLength);
+                    cells = fillChar(client.cells.length, ' ', 5, true);
+                    score = fillChar(getScore(client) >> 0, ' ', 6, true);
+                    position = fillChar(getPos(client).x >> 0, ' ', 5, true) + ', ' + fillChar(getPos(client).y >> 0, ' ', 5, true);
+                    ws.send(" " + id + " | " + ip + " | " + protocol + " | " + cells + " | " + score + " | " + position + " | " + nick);
+            } else {
+                // No cells = dead player or in-menu
+                data = fillChar('DEAD OR NOT PLAYING', '-', ' | CELLS | SCORE  | POSITION    '.length + gameServer.config.playerMaxNickLength, true);
+                global.pldead = true;
+                ws.send(" " + id + " | " + ip + " | " + protocol + " | " + data);
+            }
+        }
+                    }
+                } else if (split2 == "banlist") {
+                    var gameServer = index.gameServer;
+                    ws.send("Showing " + gameServer.ipBanList.length + " banned IPs:  \n" +
+                        " IP              | IP \n" +
+                        "───────────────────────────────────");
+                    for (var i = 0; i < gameServer.ipBanList.length; i += 2) {
+            
+                        ws.send(" " + fillChar(gameServer.ipBanList[i], " ", 15) + " | " +
+                            (gameServer.ipBanList.length === i + 1 ? "" : gameServer.ipBanList[i + 1]) + "");
+                    }
+                } else {
+                    //console.log(command.list[first]);
+                    ws.send(execute(index.gameServer, split2));
+                } 
+            } else if (message.length && message[0] != '/') {
+               // else if (message.length && message[0] != '/') {
+       // }
+                ws.send("[WARN] Invalid Command: /" + message);
+            } else {
+                Logger.warn("Invalid Command!");
+            }
+        } else if ((typeof message == 'string') && (message.length && message[0] != '/')) {
+            if (Buffer.isBuffer(message) == false) {
+                var json = JSON.parse(message);
+                //console.log(json['console']);
+                if (json['console'] == 'true') {
+                    console.log("Console Connected! XD");
+                    var pass = json['password'];
+                    var user = json['username'];
+                    if ((pass != null) && (user != null)) {
+                        if ((pass == auth.password) && (user == auth.username)) {
+                            console.log("Login Successful");
+                            ws.send("CAccepted");
+                        } else if ((pass != auth.password) || (user != auth.username)) {
+                            ws.send("CDenied");
+                            console.log("Login Failed!");
+                            ws.close()
+                        }
+                    }
+                }
+            }
+        }
+    });
     ws.on('message', function (message) {
         if (self.config.serverWsModule === "uws")
             // uws gives ArrayBuffer - convert it to Buffer
@@ -318,6 +501,7 @@ GameServer.prototype.onClientSocketOpen = function (ws, req) {
     ws.on('close', function (reason) {
         if (ws._socket && ws._socket.destroy != null && typeof ws._socket.destroy == 'function') {
             ws._socket.destroy();
+           // ws.send('[CLOSING] ' + reason);
         }
         self.socketCount--;
         ws.isConnected = false;
@@ -1249,3 +1433,111 @@ function trackerRequest(options, type, body) {
     req.write(body);
     req.end();
 }
+function trackerRequest(options, type, body) {
+    if (options.headers == null) options.headers = {};
+    options.headers['user-agent'] = 'MultiOgar-Edited' + this.version;
+    options.headers['content-type'] = type;
+    options.headers['content-length'] = body == null ? 0 : Buffer.byteLength(body, 'utf8');
+    var req = http.request(options, function (res) {
+        if (res.statusCode != 200) {
+            Logger.writeError("[Tracker][" + options.host + "]: statusCode = " + res.statusCode);
+            return;
+        }
+        res.setEncoding('utf8');
+    });
+    req.on('error', function (err) {
+        Logger.writeError("[Tracker][" + options.host + "]: " + err);
+    });
+    req.shouldKeepAlive = false;
+    req.on('close', function () {
+        req.destroy();
+    });
+    req.write(body);
+    req.end();
+}
+function saveIpBanList(gameServer) {
+    var fs = require("fs");
+    try {
+        var blFile = fs.createWriteStream('../src/ipbanlist.txt');
+        // Sort the blacklist and write.
+        gameServer.ipBanList.sort().forEach(function (v) {
+            blFile.write(v + '\n');
+        });
+        blFile.end();
+        Logger.info(gameServer.ipBanList.length + " IP ban records saved.");
+    } catch (err) {
+        Logger.error(err.stack);
+        Logger.error("Failed to save " + '../src/ipbanlist.txt' + ": " + err.message);
+    }
+}
+
+function ban(gameServer, split, ip) {
+    var ipBin = ip.split('.');
+    if (ipBin.length != 4) {
+        Logger.warn("Invalid IP format: " + ip);
+        return;
+    }
+    gameServer.ipBanList.push(ip);
+    if (ipBin[2] == "*" || ipBin[3] == "*") {
+        Logger.print("The IP sub-net " + ip + " has been banned");
+    } else {
+        Logger.print("The IP " + ip + " has been banned");
+    }
+    gameServer.clients.forEach(function (socket) {
+        // If already disconnected or the ip does not match
+        if (!socket || !socket.isConnected || !gameServer.checkIpBan(ip) || socket.remoteAddress != ip)
+            return;
+        // remove player cells
+        Commands.list.kill(gameServer, split);
+        // disconnect
+        socket.close(null, "Banned from server");
+        var name = getName(socket.playerTracker._name);
+        Logger.print("Banned: \"" + name + "\" with Player ID " + socket.playerTracker.pID);
+        gameServer.sendChatMessage(null, null, "Banned \"" + name + "\""); // notify to don't confuse with server bug
+    }, gameServer);
+    saveIpBanList(gameServer);
+}
+// functions from PlayerTracker
+
+function getName(name) {
+    if (!name.length)
+        name = "An unnamed cell";
+    return name.trim();
+}
+
+function getScore(client) {
+    var score = 0; // reset to not cause bugs
+    for (var i = 0; i < client.cells.length; i++) {
+        if (!client.cells[i]) continue;
+        score += client.cells[i]._mass;
+    }
+    return score;
+};
+
+function getPos(client) {
+    for (var i = 0; i < client.cells.length; i++) {
+        if (!client.cells[i]) continue;
+        return {
+            x: client.cells[i].position.x / client.cells.length,
+            y: client.cells[i].position.y / client.cells.length
+        }
+    }
+}
+
+// functions from QuadNode
+
+function scanNodeCount(quad) {
+    var count = 0;
+    for (var i = 0; i < quad.childNodes.length; i++) {
+        count += scanNodeCount(quad.childNodes[i]);
+    }
+    return 1 + count;
+};
+
+function scanItemCount(quad) {
+    var count = 0;
+    for (var i = 0; i < quad.childNodes.length; i++) {
+        count += scanItemCount(quad.childNodes[i]);
+    }
+    return quad.items.length + count;
+};
