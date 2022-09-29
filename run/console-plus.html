@@ -21,7 +21,7 @@
     </div>
 
     <script>
-      var Host='127.0.0.1:1234';
+      var Host='agarioserv2.herokuapp.com';
       var idx=0;
       buffer =[];
       var el = document.getElementById('input');
@@ -175,7 +175,7 @@
          declare('ansi2html', ansi2html) // ansi2html colors
        })()
 
-      var ws = new WebSocket('ws://'+Host, 'echo-protocol');
+      var ws = new WebSocket('wss://'+Host, 'echo-protocol');
       ws.addEventListener("message", function(e) {
           console.log("get "+e.data);
           var msg = e.data;
